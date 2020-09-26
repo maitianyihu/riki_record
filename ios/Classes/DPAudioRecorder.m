@@ -216,9 +216,24 @@ static DPAudioRecorder *recorderManager = nil;
             });
         });
     } else {
-        if (self.audioRecordingFail) {
-            self.audioRecordingFail(@"录音时长小于设定最短时长");
-        }
+        //RIKI项目需要把短时间的录音也发出去
+        dispatch_async(dispatch_get_global_queue(0, 0), ^{
+                    NSUInteger location = 4100;
+                    NSData *body = [cacheAudioData subdataWithRange:NSMakeRange(location, cacheAudioData.length - location)];
+                    NSMutableData *data1 = WriteWavFileHeader(body.length + 44, 8000, 1, 16).mutableCopy;
+                    [data1 appendData:body];
+        //            NSLog(@"date1date1date1date1[0-200]:%@", [data1 subdataWithRange:NSMakeRange(0, 200)]);
+                    
+                    dispatch_sync(dispatch_get_main_queue(), ^{
+                        if (self.audioRecorderFinishRecording) {
+                            self.audioRecorderFinishRecording(data1, self->audioTimeLength,wavRecordFilePath);
+                        }
+                    });
+                });
+        
+//        if (self.audioRecordingFail) {
+//            self.audioRecordingFail(@"录音时长小于设定最短时长");
+//        }
     }
     
     isRecording = NO;
